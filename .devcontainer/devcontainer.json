@@ -1,0 +1,34 @@
+{
+    "name": "llm_inference_lab",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "llm-lab",
+    "workspaceFolder": "/llm-inference-mini-lab",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "editor.bracketPairColorization.enabled": true,
+                "editor.guides.bracketPairs": "active"
+            },
+            "extensions": [
+                // common
+                "shardulm94.trailing-spaces",
+                "oderwat.indent-rainbow",
+                "streetsidesoftware.code-spell-checker",
+                // Python
+                "ms-python.python",
+                "ms-python.mypy-type-checker",
+                "charliermarsh.ruff",
+                "ms-toolsai.jupyter",
+                // toml
+                "tamasfe.even-better-toml",
+                // markdown
+                "yzhang.markdown-all-in-one",
+                "yzane.markdown-pdf",
+                "shd101wyy.markdown-preview-enhanced",
+                "davidanson.vscode-markdownlint"
+            ]
+        }
+    },
+    "postCreateCommand": "uv pip install --system -e ."
+}

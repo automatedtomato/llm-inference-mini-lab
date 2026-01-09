@@ -1,0 +1,27 @@
+services:
+  llm-lab:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../:/llm-inference-mini-lab
+      # perpetuate Hugging Face cache
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - root-home:/root
+
+    # Enable GPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+    shm_size: "8gb"
+
+    command: sleep infinity
+    network_mode: host
+
+volumes:
+  root-home:
