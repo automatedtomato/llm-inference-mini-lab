@@ -1,6 +1,22 @@
 # metadata
 *.egg-info/
 
+# Env file
 .env
 
+# Custom bash
 .bashrc
+
+# Personal documents
+internal/doc/*
+
+# Cache
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+
+# Config file
+src/configs/*.yaml
+
+# Test results
+*/results/*

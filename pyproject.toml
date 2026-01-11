@@ -17,6 +17,7 @@ dependencies = [
     "pandas>=2.2.0",
     "matplotlib>=3.9.0",
     "tqdm>=4.66.0",
+    "pyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,34 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+    "COM812",
+    "D100",
+    "D104",
+    "D107",
+    "D203",
+    "D213",
+    "DTZ005",
+    "G004",
+    "PTH103",
+    "PTH110",
+    "PTH120",
+    "PTH123",
+    "S101",
+    "S603",
+    "T201",
+]
 
 [tool.ruff.lint.pylint]
 max-args = 8
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "D101",
+    "D103"
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "gpu: marks tests as requiring a GPU (deselect with '-m \"not gpu\"')",
+]
