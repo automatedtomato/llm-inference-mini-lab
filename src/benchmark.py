@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from utils import get_logger, load_config
 
@@ -38,15 +38,30 @@ def parse_arguments() -> argparse.Namespace:
 def load_model_and_tokenizer(
     model_name: str,
     dtype: torch.dtype = torch.float16,
+    quantization_config: dict[str, Any] | None = None,
     **kwargs,  # noqa: ANN003, ARG001
 ) -> tuple[Any, Any]:
     """Load model and tokenizer from model name."""
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    logger.info(f"Loading model: {model_name}.")
+    bnb_config = None
+    if quantization_config:
+        if quantization_config.get("method") == "bitsandbytes":
+            quantization_config["bnb_4bit_compute_type"] = getattr(
+                torch, str(quantization_config.get("bnb_4bit_compute_dtype"))
+            )
+            logger.info("Configuring bitsandbytes quantization.")
+            bnb_config = BitsAndBytesConfig(
+                **quantization_config,
+                bnb_4bit_use_double_quant=True,
+            )
+        else:
+            raise NotImplementedError
+
+    logger.info(f"Loading model: {model_name}. Quantized={bnb_config is not None}")
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=dtype, device_map="auto"
+        model_name, dtype=dtype, quantization_config=bnb_config, device_map="auto"
     )
 
     if tokenizer.pad_token is None:
@@ -119,10 +134,16 @@ def save_results_to_csv(
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     file_exists = os.path.exists(out_path)
 
+    quant_config = model_config.get("quantization_config", {})
+
     row = {
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "model": model_config["model_name"],
         "dtype": str(model_config.get("dtype", "unknown")),
+        "quant_method": quant_config.get("method", "None"),
+        "load_8bit": quant_config.get("load_in_8bit", False),
+        "load_4bit": quant_config.get("load_in_4bit", False),
+        "quant_type": quant_config.get("bnb_4bit_quant_type", "n/a"),
         "prefill_tps": f"{metrics['prefill_tps']:f}",
         "decode_tps": f"{metrics['decode_tps']:f}",
         "max_vram_gb": f"{metrics['max_vram_gb']:f}",
@@ -139,7 +160,6 @@ def save_results_to_csv(
         if not file_exists:
             writer.writeheader()
         writer.writerow(row)
-    logger.info(f"Results saved to {out_path}.")
 
 
 def main() -> None:
@@ -179,14 +199,14 @@ def main() -> None:
     avg_decode = statistics.mean([m["decode_tps"] for m in results])
     max_vram = max([m["max_vram_gb"] for m in results])
 
+    if save_results:
+        out_path = config["output"]["csv_path"]
+        save_results_to_csv(model_config, metrics, out_path)
+
     print(f"--- Result ({num_trials} avg.): {model_config['model_name']} ---")
     print(f"Prefill Speed: {avg_prefill:.2f} tokens/sec")
     print(f"Decode Speed : {avg_decode:.2f} tokens/sec")
     print(f"Max VRAM     : {max_vram:.2f} GB")
-
-    if save_results:
-        out_path = config["output"]["csv_path"]
-        save_results_to_csv(model_config, metrics, out_path)
 
 
 if __name__ == "__main__":

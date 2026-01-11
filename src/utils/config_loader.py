@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 def load_config(config_path: str | Path) -> dict[str, Any]:
     """Load config from config_path."""
+    config: dict[str, Any] = {}
     try:
         with open(config_path) as f:
             config = yaml.safe_load(f)
