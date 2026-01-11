@@ -14,3 +14,9 @@ internal/doc/*
 .mypy_cache/
 .ruff_cache/
 __pycache__/
+
+# Config file
+src/configs/*.yaml
+
+# Test results
+*/results/*

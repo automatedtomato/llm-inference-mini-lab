@@ -1,0 +1,19 @@
+experiment_name: llama3.2_3b_fp16_baseline"
+
+model:
+  model_name: "meta-llama/Llama-3.2-3B-Instruct"
+  dtype: "float16"
+
+benchmark:
+  warmup_steps: 2
+  num_trials: 3
+  max_new_tokens: 50
+
+prompt:
+  type: "text"
+  content: |
+    Artificial intelligence (AI) is the intelligence of machines or software, as opposed to the intelligence of living beings, primarily of humans. It is a field of study in computer science that develops and studies intelligent machines. Such machines may be called AIs.
+    AI technology is widely used throughout industry, government, and science. Some high-profile applications are: advanced web search engines (e.g., Google Search), recommendation systems (used by YouTube, Amazon, and Netflix), understanding human speech (such as Google Assistant, Siri, and Alexa), self-driving cars (e.g., Waymo), generative and creative tools (ChatGPT and AI art), and superhuman play and analysis in strategy games (such as chess and Go).
+
+output:
+  csv_path: src/results/benchmark.csv

@@ -17,6 +17,7 @@ dependencies = [
     "pandas>=2.2.0",
     "matplotlib>=3.9.0",
     "tqdm>=4.66.0",
+    "pyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -47,8 +48,15 @@ ignore = [
     "D107",
     "D203",
     "D213",
+    "DTZ005",
     "G004",
-    "T201"
+    "PTH103",
+    "PTH110",
+    "PTH120",
+    "PTH123",
+    "S101",
+    "S603",
+    "T201",
 ]
 
 [tool.ruff.lint.pylint]
