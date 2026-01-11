@@ -6,13 +6,15 @@ import os
 import statistics
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from utils import get_logger, load_config
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = get_logger("benchmark")
 
@@ -124,7 +126,9 @@ def save_results_to_csv(
         "prefill_tps": f"{metrics['prefill_tps']:f}",
         "decode_tps": f"{metrics['decode_tps']:f}",
         "max_vram_gb": f"{metrics['max_vram_gb']:f}",
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU",
+        "gpu_name": torch.cuda.get_device_name(0)
+        if torch.cuda.is_available()
+        else "CPU",
     }
 
     fieldnames = list(row.keys())
@@ -136,7 +140,6 @@ def save_results_to_csv(
             writer.writeheader()
         writer.writerow(row)
     logger.info(f"Results saved to {out_path}.")
-
 
 
 def main() -> None:

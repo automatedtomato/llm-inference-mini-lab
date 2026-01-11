@@ -8,6 +8,7 @@ import yaml
 if TYPE_CHECKING:
     from pathlib import Path
 
+
 def load_config(config_path: str | Path) -> dict[str, Any]:
     """Load config from config_path."""
     try:
