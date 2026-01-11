@@ -64,7 +64,8 @@ max-args = 8
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "D101"
+    "D101",
+    "D103"
 ]
 
 [tool.pytest.ini_options]
