@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from utils import get_logger, load_config
-from utils.layer_by_layer_compare import clear_hooks, register_original_hooks, register_target_hooks
+from utils.tools.layer_by_layer_compare import clear_hooks, register_original_hooks, register_target_hooks
 from utils.utils import load_model_and_tokenizer, prepare_dataset
 
 logger = get_logger("layer_by_layer")
