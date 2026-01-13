@@ -1,20 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import os
 import statistics
 import time
-from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 from utils import get_logger, load_config
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from utils.utils import load_model_and_tokenizer, save_results_to_csv
 
 logger = get_logger("benchmark")
 
@@ -35,40 +30,6 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_model_and_tokenizer(
-    model_name: str,
-    dtype: torch.dtype = torch.float16,
-    quantization_config: dict[str, Any] | None = None,
-    **kwargs,  # noqa: ANN003, ARG001
-) -> tuple[Any, Any]:
-    """Load model and tokenizer from model name."""
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    bnb_config = None
-    if quantization_config:
-        if quantization_config.get("method") == "bitsandbytes":
-            quantization_config["bnb_4bit_compute_type"] = getattr(
-                torch, str(quantization_config.get("bnb_4bit_compute_dtype"))
-            )
-            logger.info("Configuring bitsandbytes quantization.")
-            bnb_config = BitsAndBytesConfig(
-                **quantization_config,
-                bnb_4bit_use_double_quant=True,
-            )
-        else:
-            raise NotImplementedError
-
-    logger.info(f"Loading model: {model_name}. Quantized={bnb_config is not None}")
-
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=dtype, quantization_config=bnb_config, device_map="auto"
-    )
-
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    return model, tokenizer
-
-
 def measure_metrics(
     prompt: str,
     tokenizer: Any,  # noqa: ANN401
@@ -77,7 +38,19 @@ def measure_metrics(
     device: str = "cuda",
     max_new_tokens: int = 50,
 ) -> dict[str, float]:
-    """Measure metrics (prefill, decode) for the given model. Return in dictionary."""
+    """Measure metrics (prefill, decode) for the given model. Return in dictionary.
+
+    Args:
+        prompt (str): prompt text.
+        tokenizer (Any): loaded tokenizer.
+        model (Any): loaded model.
+        device (str): device. Defualt to 'cuda'
+        max_new_tokens (int): maximum num of new tokens.
+
+    Returns:
+        Dictionary of metrics (dict[str, Any])
+
+    """
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
     input_ids = inputs.input_ids
     num_imput_tokens = input_ids.shape[1]  # Get squence length
@@ -127,43 +100,8 @@ def measure_metrics(
     }
 
 
-def save_results_to_csv(
-    model_config: dict[str, Any], metrics: dict[str, Any], out_path: Path
-) -> None:
-    """Save benchmark results to a CSV file."""
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    file_exists = os.path.exists(out_path)
-
-    quant_config = model_config.get("quantization_config", {})
-
-    row = {
-        "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "model": model_config["model_name"],
-        "dtype": str(model_config.get("dtype", "unknown")),
-        "quant_method": quant_config.get("method", "None"),
-        "load_8bit": quant_config.get("load_in_8bit", False),
-        "load_4bit": quant_config.get("load_in_4bit", False),
-        "quant_type": quant_config.get("bnb_4bit_quant_type", "n/a"),
-        "prefill_tps": f"{metrics['prefill_tps']:f}",
-        "decode_tps": f"{metrics['decode_tps']:f}",
-        "max_vram_gb": f"{metrics['max_vram_gb']:f}",
-        "gpu_name": torch.cuda.get_device_name(0)
-        if torch.cuda.is_available()
-        else "CPU",
-    }
-
-    fieldnames = list(row.keys())
-
-    with open(out_path, mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        # If newly created, write header
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row)
-
-
 def main() -> None:
-    """Run the main logic."""
+    """Run the main logic of benchmarking."""
     args = parse_arguments()
     config = load_config(args.config_path)
 
@@ -182,7 +120,7 @@ def main() -> None:
     for _ in range(warmup_steps):
         _ = measure_metrics(prompt, tokenizer, model, max_new_tokens=max_new_tokens)
 
-    logger.info(f"Starting benchmark measurement ({num_trials} trials)")
+    logger.info(f"Starting benchmark measurement ({num_trials} trials).")
     results = []
     for i in range(num_trials):
         metrics = measure_metrics(
