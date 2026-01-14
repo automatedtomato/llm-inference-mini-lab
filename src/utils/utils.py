@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
-
 import gc
+from typing import Any
 
 import torch
 from datasets import load_dataset
@@ -68,6 +67,7 @@ def prepare_dataset(split: str = "test", length: int = -1) -> str:
     print(f"{len(text)=}")
 
     return text
+
 
 def cleanup_gpu() -> None:
     """Clean up GPU."""

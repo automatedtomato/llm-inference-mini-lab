@@ -10,7 +10,7 @@ import torch
 
 from utils import get_logger, load_config
 from utils.eval_utils import NUM_TRIALS, run_evaluation, save_results_to_csv
-from utils.utils import load_model_and_tokenizer, prepare_dataset, cleanup_gpu
+from utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
 
 save_results = os.getenv("SAVE_EVAL_RESULTS", None) is not None
 
@@ -60,7 +60,7 @@ def main() -> None:
     qconfig = load_config(args.qconfig)
 
     prompt = prepare_dataset(length=1000)
-    results: list[tuple[dict, Any]] = []
+    results: list[tuple[dict, Any]] = []  # (qconfig, metrics)
 
     if args.float_eval:
         logger.info("Start float model evaluation.")
@@ -68,15 +68,13 @@ def main() -> None:
             float_model, tokenizer = load_model_and_tokenizer(
                 args.arch, dtype=torch.float16, quantization_config=None
             )
-            ret_float = run_evaluation(
-                float_model, tokenizer, prompt
-            )
+            ret_float = run_evaluation(float_model, tokenizer, prompt)
             print(f"--- Float Model Eval. Result ({NUM_TRIALS} avg.): {args.arch} ---")
             print(f"Avg. Prefill Speed: {ret_float[0]:.4f} tokens/sec")
             print(f"Avg. Decode Speed : {ret_float[1]:.4f} tokens/sec")
             print(f"Max VRAM          : {ret_float[2]:.4f} GB")
             print(f"Perplexity.       : {ret_float[3]:.4f}\n")
-            results.append(ret_float)
+            results.append(({"method": "FP16"}, ret_float))
 
             del float_model
             del tokenizer
@@ -95,18 +93,15 @@ def main() -> None:
             quant_model, tokenizer = load_model_and_tokenizer(
                 args.arch, dtype=torch.float16, **qconfig
             )
-            ret_quant = run_evaluation(
-                quant_model, tokenizer, prompt
-            )
+            ret_quant = run_evaluation(quant_model, tokenizer, prompt)
             print(
-                "--- Quantized Model Eval. Result "
-                f"({NUM_TRIALS} avg.): {args.arch} ---"
+                f"--- Quantized Model Eval. Result ({NUM_TRIALS} avg.): {args.arch} ---"
             )
             print(f"Avg. Prefill Speed: {ret_quant[0]:.4f} tokens/sec")
             print(f"Avg. Decode Speed : {ret_quant[1]:.4f} tokens/sec")
             print(f"Max VRAM          : {ret_quant[2]:.4f} GB")
             print(f"Perplexity.       : {ret_quant[3]:.4f}\n")
-            results.append(ret_quant)
+            results.append((qconfig, ret_quant))
 
             del quant_model
             del tokenizer
@@ -117,8 +112,10 @@ def main() -> None:
 
     if save_results and results:
         save_path = Path("src/results/") / "metrics.csv"
-        for res in results:
-            save_results_to_csv(args.arch, qconfig, res, save_path)
+        for qc, met in results:
+            save_results_to_csv(args.arch, qc, met, save_path)
+        print(f"Results saved to {save_path}")
+
 
 if __name__ == "__main__":
     main()
