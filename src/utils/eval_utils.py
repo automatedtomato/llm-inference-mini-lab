@@ -5,13 +5,15 @@ import os
 import statistics
 import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 from tqdm import tqdm
 
 from utils import get_logger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 GPU_LIMIT = 4096
 WARMUP_STEPS = 2
