@@ -7,7 +7,12 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
+from utils import get_logger
+
 GPU_LIMIT = 4096
+
+
+logger = get_logger("utils")
 
 
 def load_model_and_tokenizer(  # noqa: D417
@@ -35,7 +40,7 @@ def load_model_and_tokenizer(  # noqa: D417
             quantization_config["bnb_4bit_compute_type"] = getattr(
                 torch, str(quantization_config.get("bnb_4bit_compute_dtype"))
             )
-            print(f"Configuring bitsandbytes quantization. {quantization_config}")
+            logger.info(f"Configuring bitsandbytes quantization. {quantization_config}")
             bnb_config = BitsAndBytesConfig(
                 **quantization_config,
                 bnb_4bit_use_double_quant=True,
@@ -43,7 +48,7 @@ def load_model_and_tokenizer(  # noqa: D417
         else:
             raise NotImplementedError
 
-    print(f"Model: {model_name}. Quantized={bnb_config is not None}")
+    logger.info(f"Model: {model_name}. Quantized={bnb_config is not None}")
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name, dtype=dtype, quantization_config=bnb_config, device_map="auto"

@@ -20,3 +20,4 @@ configs/*.yaml
 
 # Test results
 */results/*
+results/

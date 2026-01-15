@@ -19,4 +19,4 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
 
     print(f"QConfig file loaded from {config_path}")
 
-    return config["quantization_config"]
+    return config
