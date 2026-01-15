@@ -16,7 +16,8 @@ internal/doc/*
 __pycache__/
 
 # Config file
-src/configs/*.yaml
+configs/*.yaml
 
 # Test results
 */results/*
+results/

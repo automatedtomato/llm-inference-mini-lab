@@ -18,6 +18,7 @@ dependencies = [
     "matplotlib>=3.9.0",
     "tqdm>=4.66.0",
     "pyYAML>=6.0",
+    "datasets"
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,7 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    "BLE001",
     "COM812",
     "D100",
     "D104",
@@ -49,14 +51,22 @@ ignore = [
     "D203",
     "D213",
     "DTZ005",
+    "ERA001",
     "G004",
+    "NPY002",
     "PTH103",
     "PTH110",
     "PTH120",
     "PTH123",
     "S101",
     "S603",
+    "SIM105",
     "T201",
+    "TD002",
+    "TD003",
+    "TRY003",
+    "TRY400",
+    "RUF003"
 ]
 
 [tool.ruff.lint.pylint]
