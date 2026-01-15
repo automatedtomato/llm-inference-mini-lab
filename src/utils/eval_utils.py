@@ -137,6 +137,8 @@ def run_evaluation(
     model: Any,  # noqa: ANN401
     tokenizer: Any,  # noqa: ANN401
     prompt: str,
+    mode: str,
+    prompt_length: int,
     stride: int = 512,
     device: str = "cuda",
 ) -> tuple[float, ...]:
@@ -170,8 +172,14 @@ def run_evaluation(
     avg_prefill_tps = statistics.mean(m["prefill_tps"] for m in results)
     avg_decode_tps = statistics.mean([m["decode_tps"] for m in results])
     max_vram = max([m["max_vram_gb"] for m in results])
+    print("\n")
+    print(f"--- Eval. Result ({mode} model - {NUM_TRIALS} avg. - {prompt_length=}) ---")
+    print(f"Avg. Prefill Speed: {avg_prefill_tps:.4f} tokens/sec")
+    print(f"Avg. Decode Speed : {avg_decode_tps:.4f} tokens/sec")
+    print(f"Max VRAM          : {max_vram:.4f} GB")
+    print(f"Perplexity.       : {ppl:.4f}\n")
 
-    return avg_prefill_tps, avg_decode_tps, max_vram, ppl
+    return avg_prefill_tps, avg_decode_tps, max_vram, ppl, prompt_length
 
 
 def save_results_to_csv(
@@ -191,6 +199,7 @@ def save_results_to_csv(
         "load_8bit": qconfig.get("load_in_8bit", False),
         "load_4bit": qconfig.get("load_in_4bit", False),
         "quant_type": qconfig.get("bnb_4bit_quant_type", "n/a"),
+        "prompt_length": metrics[4],
         "avg_prefill_tps": f"{metrics[0]}",
         "avg_decode_tps": f"{metrics[1]}",
         "max_vram_gb": f"{metrics[2]}",
