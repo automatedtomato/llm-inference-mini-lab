@@ -1,6 +1,5 @@
-quantization_config:
-  method: "bitsandbytes"
-  load_in_8bit: false
-  load_in_4bit: true
-  bnb_4bit_compute_dtype: "bfloat16"
-  bnb_4bit_quant_type: "nf4"
+method: "bitsandbytes"
+load_in_8bit: false
+load_in_4bit: true
+bnb_4bit_compute_dtype: "bfloat16"
+bnb_4bit_quant_type: "nf4"
