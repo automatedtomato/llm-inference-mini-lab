@@ -11,6 +11,7 @@ import torch
 from tools.layer_by_layer_analysis import create_lbl_analysis_report
 from utils import get_logger, load_config
 from utils.eval_utils import run_evaluation, save_results_to_csv
+from utils.lab_patch import apply_patch
 from utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
 
 save_results = os.getenv("SAVE_EVAL_RESULTS", None) is not None
@@ -63,10 +64,15 @@ def parse_arguments() -> argparse.Namespace:
             "Analysis report will be saved to the specified dir."
         ),
     )
+    parser.add_argument(
+        "--mixed-prec",
+        action="store_true",
+        help="If specified, replace layers identified in confif with float16",
+    )
     return parser.parse_args()
 
 
-def main() -> None:
+def main() -> None:  # noqa: C901
     """Run laboratory."""
     args = parse_arguments()
 
@@ -103,6 +109,12 @@ def main() -> None:
             quant_model, tokenizer = load_model_and_tokenizer(
                 args.arch, dtype=torch.float16, quantization_config=qconfig
             )
+            if args.mixed_prec:
+                fp16_layers = qconfig.get("fp16_layers", [])
+                if not fp16_layers:
+                    logger.warning("No layers are declared.")
+                quant_model = apply_patch(quant_model, args.arch, fp16_layers)
+                qconfig["method"] = f"MixedPrecision(n={len(fp16_layers)})"
             ret_quant = run_evaluation(
                 quant_model, tokenizer, prompt, "quantized", args.input_length
             )
