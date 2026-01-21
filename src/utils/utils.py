@@ -7,7 +7,7 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from utils import get_logger
+from . import get_logger
 
 GPU_LIMIT = 4096
 

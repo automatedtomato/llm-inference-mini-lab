@@ -2,7 +2,7 @@ import pytest
 import torch
 from transformers import AutoConfig, AutoModelForCausalLM
 
-from src.utils.utils import get_target_layers
+from utils.utils import get_target_layers
 
 archs = [
     "meta-llama/Llama-3.2-3B-Instruct",

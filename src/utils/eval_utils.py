@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 from tqdm import tqdm
 
-from utils import get_logger
+from . import get_logger
 
 if TYPE_CHECKING:
     from pathlib import Path
