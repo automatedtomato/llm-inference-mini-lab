@@ -8,11 +8,11 @@ from typing import Any
 
 import torch
 
-from tools.layer_by_layer_analysis import create_lbl_analysis_report
-from utils import get_logger, load_config
-from utils.eval_utils import run_evaluation, save_results_to_csv
-from utils.lab_patch import apply_patch
-from utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
+from .tools.layer_by_layer_analysis import create_lbl_analysis_report
+from .utils import get_logger, load_config
+from .utils.eval_utils import run_evaluation, save_results_to_csv
+from .utils.lab_patch import apply_patch
+from .utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
 
 save_results = os.getenv("SAVE_EVAL_RESULTS", None) is not None
 

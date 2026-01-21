@@ -14,6 +14,7 @@ internal/doc/*
 .mypy_cache/
 .ruff_cache/
 __pycache__/
+.pytest_cache/
 
 # Config file
 configs/*.yaml
@@ -21,3 +22,6 @@ configs/*.yaml
 # Test results
 */results/*
 results/
+
+# Experiments
+experiments/*

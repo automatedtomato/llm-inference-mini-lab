@@ -7,7 +7,7 @@ import torch
 from huggingface_hub import snapshot_download
 from safetensors import safe_open
 
-from utils import get_logger
+from . import get_logger
 
 logger = get_logger("lab_patch")
 
