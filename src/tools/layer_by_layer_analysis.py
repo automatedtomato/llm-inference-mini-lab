@@ -183,18 +183,12 @@ def _plot_comparison_results(
     x = range(len(name_list))
 
     max_name_len = max(len(name) for name in name_list)
-    mse_range = max(mses) - min(mses)
-    sim_range = (max(sims) - min(sims)) * 50
-    met_range = max(mse_range, sim_range)
 
     w_per_data = 0.5
     fig_width = len(mses) * w_per_data
 
-    h_per_met = 0.2
-    h_per_name = 0.2
-    h_for_met = max(met_range * h_per_met, 2 * max_name_len * h_per_name)
-
-    fig_hight = h_for_met + max_name_len * h_per_name
+    h_per_char = 0.6
+    fig_hight = 6.0 + (max_name_len * h_per_char)
 
     _, ax1 = plt.subplots(figsize=(fig_width, fig_hight))
     ax1.set_xlabel("op index")
@@ -216,6 +210,7 @@ def _plot_comparison_results(
     lines_1, labels_1 = ax1.get_legend_handles_labels()
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc="upper left")
+    plt.tight_layout()
     plt.savefig(fig_dir / "summary.png")
     plt.close()
     plt.clf()
