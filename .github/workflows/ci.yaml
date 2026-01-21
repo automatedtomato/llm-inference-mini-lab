@@ -32,5 +32,7 @@ jobs:
         uv run ruff format --check .
 
     - name: Run Tests (CPU/Mock only)
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         uv run pytest tests/ -v -m "not gpu"
