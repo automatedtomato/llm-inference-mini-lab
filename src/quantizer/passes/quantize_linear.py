@@ -26,7 +26,7 @@ def _replace_submodule(
 def quantize_linear(model: torch.nn.Module) -> torch.nn.Module:
     """Replace Linear module to custom quantized linear module."""
     layers = get_transformer_block(model)
-    for layer in tqdm(layers, desc="quantize linear"):
+    for layer in layers:
         targets: list[tuple[str, torch.nn.Module | Any]] = []
         for name, mod in layer.named_modules():
             if isinstance(mod, torch.nn.Linear):
