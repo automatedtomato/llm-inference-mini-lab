@@ -2,17 +2,15 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-import torch
-
-from .tools.layer_by_layer_analysis import create_lbl_analysis_report
-from .utils import get_logger, load_config
-from .utils.eval_utils import run_evaluation, save_results_to_csv
-from .utils.lab_patch import apply_patch
-from .utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
+from src.quantizer.passes import quantize_linear
+from src.tools.layer_by_layer_analysis import create_lbl_analysis_report
+from src.utils import get_logger, load_config
+from src.utils.eval_utils import run_evaluation, save_results_to_csv
+from src.utils.lab_patch import apply_patch
+from src.utils.utils import cleanup_gpu, load_model_and_tokenizer, prepare_dataset
 
 save_results = os.getenv("SAVE_EVAL_RESULTS", None) is not None
 
@@ -52,9 +50,14 @@ def parse_arguments() -> argparse.Namespace:
         help="If specified, float model will be evaluated.",
     )
     parser.add_argument(
-        "--quant-eval",
+        "--bnb-quant-eval",
         action="store_true",
-        help="If specified, quantized model will be evaluated.",
+        help="If specified, model quantized by BitsAndBytes will be evaluated.",
+    )
+    parser.add_argument(
+        "--custom-quant-eval",
+        action="store_true",
+        help="If specified, model quantized by custom naive int8 will be evaluated.",
     )
     parser.add_argument(
         "--lbl-dump-dir",
@@ -72,7 +75,79 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:  # noqa: C901
+def run_benchmark(
+    model_arch: str,
+    q_config: dict[str, Any] | None,
+    prompt: str,
+    mode: Literal["float", "bnb_quant", "custom_quant"],
+    input_legth: int,
+    mixed_prec: bool,  # noqa: FBT001
+) -> tuple[dict[str, Any], Any] | None:
+    """Run benchmark task.
+
+    Args:
+        model_arch (str): model architecture
+        q_config (dict): loaded quantization config
+        prompt (str): evaluation prompt
+        mode (Literal): evaluation mode ("float", "bnb_quant", "custom_quant")
+        input_legth (int): input length for evaluation
+        mixed_prec (bool): if True, apply mixed precision patch for BNB quant
+
+
+    Returns:
+        tuple[dict, Any] | None: (result_confg, metrics) or None if failed.
+
+    """
+    cur_config = q_config.copy() if q_config else {}
+    load_config = None
+
+    if mode == "bnb_quant":
+        if not cur_config:
+            logger.error(
+                "Quantization config for BNB not found. Use `--qconfig` option."
+            )
+            return None
+        load_config = cur_config
+
+    model = None
+    tokenizer = None
+
+    try:
+        model, tokenizer = load_model_and_tokenizer(
+            model_arch, quantization_config=load_config
+        )
+
+        if mode == "bnb_quant" and mixed_prec:
+            fp16_layers = cur_config.get("fp16_layers", [])
+            if fp16_layers:
+                model = apply_patch(model, model_arch, fp16_layers)
+                cur_config["method"] = f"MixedPrecision(n={len(fp16_layers)})"
+            else:
+                logger.warning("Mixed precision requested but no layers declared.")
+
+        elif mode == "custom_quant":
+            model = quantize_linear(model)
+            cur_config = {"method": "CustomInt8"}
+
+        elif mode == "float":
+            cur_config = {"method": "FP16"}
+
+        metrics = run_evaluation(model, tokenizer, prompt, mode, input_legth)
+        return (cur_config, metrics)  # noqa: TRY300
+
+    except Exception as e:
+        logger.error(f"{mode} eval failed: {e}")
+        return None
+
+    finally:
+        if model is not None:
+            del model
+        if tokenizer is not None:
+            del tokenizer
+        cleanup_gpu()
+
+
+def main() -> None:
     """Run laboratory."""
     args = parse_arguments()
 
@@ -81,52 +156,40 @@ def main() -> None:  # noqa: C901
     results: list[tuple[dict, Any]] = []  # (qconfig, metrics)
 
     if args.float_eval:
-        logger.info(f"Start float model evaluation: {args.arch}")
-        try:
-            float_model, tokenizer = load_model_and_tokenizer(
-                args.arch, dtype=torch.float16, quantization_config=None
-            )
-            ret_float = run_evaluation(
-                float_model, tokenizer, prompt, "float", args.input_length
-            )
-            results.append(({"method": "FP16"}, ret_float))
+        res = run_benchmark(
+            args.arch,
+            qconfig,
+            prompt,
+            mode="float",
+            input_legth=args.input_length,
+            mixed_prec=False,
+        )
+        if res:
+            results.append(res)
 
-        except Exception as e:
-            logger.error(f"Float eval failed: {e}")
-            sys.exit(1)
-        finally:
-            del float_model
-            del tokenizer
-            cleanup_gpu()
+    if args.bnb_quant_eval:
+        res = run_benchmark(
+            args.arch,
+            qconfig,
+            prompt,
+            mode="bnb_quant",
+            input_legth=args.input_length,
+            mixed_prec=args.mixed_prec,
+        )
+        if res:
+            results.append(res)
 
-    if args.quant_eval:
-        logger.info(f"Start quantized model evaluation: {args.arch}")
-        if not qconfig:
-            logger.error("Quantization config is missing. Use --qconfig.")
-            sys.exit(1)
-
-        try:
-            quant_model, tokenizer = load_model_and_tokenizer(
-                args.arch, dtype=torch.float16, quantization_config=qconfig
-            )
-            if args.mixed_prec:
-                fp16_layers = qconfig.get("fp16_layers", [])
-                if not fp16_layers:
-                    logger.warning("No layers are declared.")
-                quant_model = apply_patch(quant_model, args.arch, fp16_layers)
-                qconfig["method"] = f"MixedPrecision(n={len(fp16_layers)})"
-            ret_quant = run_evaluation(
-                quant_model, tokenizer, prompt, "quantized", args.input_length
-            )
-            results.append((qconfig, ret_quant))
-
-        except Exception as e:
-            logger.error(f"Quantized eval failed: {e}")
-            sys.exit(1)
-        finally:
-            del quant_model
-            del tokenizer
-            cleanup_gpu()
+    if args.custom_quant_eval:
+        res = run_benchmark(
+            args.arch,
+            qconfig,
+            prompt,
+            mode="custom_quant",
+            input_legth=args.input_length,
+            mixed_prec=False,
+        )
+        if res:
+            results.append(res)
 
     if save_results and results:
         save_path = Path("src/results/") / "metrics.csv"
