@@ -4,7 +4,6 @@ import gc
 from typing import Any
 
 import torch
-from tqdm import tqdm
 
 from src.quantizer.models import CustomQuantLinear
 from src.quantizer.utils import get_transformer_block
