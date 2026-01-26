@@ -19,6 +19,7 @@ def load_model_and_tokenizer(  # noqa: D417
     model_name: str,
     dtype: torch.dtype = torch.float16,
     quantization_config: dict[str, Any] | None = None,
+    device_map: str | None = "auto",
     **kwargs,  # noqa: ANN003, ARG001
 ) -> tuple[Any, Any]:
     """Load model and tokenizer from model name.
@@ -51,7 +52,7 @@ def load_model_and_tokenizer(  # noqa: D417
     logger.info(f"Model: {model_name}. Quantized={bnb_config is not None}")
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=dtype, quantization_config=bnb_config, device_map="auto"
+        model_name, dtype=dtype, quantization_config=bnb_config, device_map=device_map
     )
 
     if tokenizer.pad_token is None:
