@@ -136,7 +136,7 @@ def run_benchmark(
         return (cur_config, metrics)  # noqa: TRY300
 
     except Exception as e:
-        logger.error(f"{mode} eval failed: {e}")
+        logger.error(f"{mode} eval failed: {e}", exc_info=True)  # noqa: G201
         return None
 
     finally:

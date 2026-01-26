@@ -9,7 +9,7 @@ from src.quantizer.models import CustomQuantLinear
 from src.quantizer.utils import get_transformer_block
 from src.utils import get_logger
 
-logger = get_logger("quantizer")
+logger = get_logger("pass")
 
 
 def _replace_submodule(
