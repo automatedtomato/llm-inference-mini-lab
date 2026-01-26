@@ -49,7 +49,7 @@ def load_model_and_tokenizer(  # noqa: D417
         else:
             raise NotImplementedError
 
-    logger.info(f"Model: {model_name}. Quantized={bnb_config is not None}")
+    logger.info(f"Loaded Model: {model_name}.")
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name, dtype=dtype, quantization_config=bnb_config, device_map=device_map
