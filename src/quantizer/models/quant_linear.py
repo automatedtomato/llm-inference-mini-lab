@@ -8,6 +8,7 @@ logger = get_logger("quant_linear")
 
 UINT4_MIN, UINT4_MAX = 0, 15
 
+
 class CustomQuantLinear(torch.nn.Module):
     """Custom quantized linear module (int8)."""
 
