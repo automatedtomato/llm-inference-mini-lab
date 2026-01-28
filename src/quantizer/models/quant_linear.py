@@ -25,9 +25,7 @@ class CustomQuantLinear(torch.nn.Module):
                 f"in_features ({self.in_features}) must be devided by "
                 f"block_size ({self.block_size})."
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         org_weight = org_linear.weight.data
 
@@ -53,9 +51,7 @@ class CustomQuantLinear(torch.nn.Module):
 
         w_blocked = w_unpacked.view(self.out_features, -1, self.block_size)
 
-        w_rec_blocked = (
-            w_blocked.to(dtype) - self.zp.to(dtype)
-        ) * self.scale.to(dtype)
+        w_rec_blocked = (w_blocked.to(dtype) - self.zp.to(dtype)) * self.scale.to(dtype)
 
         w_rec = w_rec_blocked.view(self.out_features, self.in_features)
         return torch.nn.functional.linear(x, w_rec, self.bias)
