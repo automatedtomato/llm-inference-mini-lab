@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 from tqdm import tqdm
 
-from utils import get_logger
+from . import get_logger
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -200,10 +200,10 @@ def save_results_to_csv(
         "load_4bit": qconfig.get("load_in_4bit", False),
         "quant_type": qconfig.get("bnb_4bit_quant_type", "n/a"),
         "prompt_length": metrics[4],
-        "avg_prefill_tps": f"{metrics[0]}",
-        "avg_decode_tps": f"{metrics[1]}",
-        "max_vram_gb": f"{metrics[2]}",
-        "perplexity": f"{metrics[3]}",
+        "avg_prefill_tps": f"{metrics[0]:.6f}",
+        "avg_decode_tps": f"{metrics[1]:.6f}",
+        "max_vram_gb": f"{metrics[2]:.6f}",
+        "perplexity": f"{metrics[3]:.6f}",
         "gpu_name": torch.cuda.get_device_name(0)
         if torch.cuda.is_available()
         else "CPU",

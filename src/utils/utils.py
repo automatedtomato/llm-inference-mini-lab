@@ -7,7 +7,7 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-from utils import get_logger
+from . import get_logger
 
 GPU_LIMIT = 4096
 
@@ -19,6 +19,7 @@ def load_model_and_tokenizer(  # noqa: D417
     model_name: str,
     dtype: torch.dtype = torch.float16,
     quantization_config: dict[str, Any] | None = None,
+    device_map: str | None = "auto",
     **kwargs,  # noqa: ANN003, ARG001
 ) -> tuple[Any, Any]:
     """Load model and tokenizer from model name.
@@ -48,10 +49,10 @@ def load_model_and_tokenizer(  # noqa: D417
         else:
             raise NotImplementedError
 
-    logger.info(f"Model: {model_name}. Quantized={bnb_config is not None}")
+    logger.info(f"Loaded Model: {model_name}.")
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=dtype, quantization_config=bnb_config, device_map="auto"
+        model_name, dtype=dtype, quantization_config=bnb_config, device_map=device_map
     )
 
     if tokenizer.pad_token is None:
@@ -79,3 +80,31 @@ def cleanup_gpu() -> None:
     if torch.cuda.is_available():
         gc.collect()
         torch.cuda.empty_cache()
+
+
+def get_transformer_block(model: torch.nn.Module) -> torch.nn.ModuleList:
+    """Find transformer blocks from model architecture."""
+    # Llama, Gemma, Qwen, Phi
+    if hasattr(model, "model") and hasattr(model.model, "layers"):
+        return model.model.layers
+    else:  # noqa: RET505
+        # NOTE: Other structure is currenctly not supported.
+        raise NotImplementedError
+
+
+def get_target_layers(model: torch.nn.Module) -> list[tuple[str, torch.nn.Module]]:
+    """Get all of specified module from transformer block.
+
+    Returns:
+        list of (full module name, module instance)
+
+    """
+    target_layers = []
+
+    layers = get_transformer_block(model)
+    for idx, layer in enumerate(layers):
+        for name, module in layer.named_modules():
+            if isinstance(module, torch.nn.Linear):
+                full_name = f"layers.{idx}.{name}"
+                target_layers.append((full_name, module))
+    return target_layers
