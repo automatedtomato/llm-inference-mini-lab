@@ -16,12 +16,12 @@ seeds = [int(os.getenv("SEED", time.time_ns()))]
 
 in_feats = [
     512,
-    1024,
+    2048,
 ]
 
 out_feats = [
-    200,
-    64,
+    256,
+    1024,
 ]
 
 bias = [
@@ -46,9 +46,9 @@ class DummyAttention(torch.nn.Module):
                 torch.nn.ModuleDict(
                     {
                         "self_attn": torch.nn.ModuleDict(
-                            {"proj": torch.nn.Linear(1024, 64)}
+                            {"proj": torch.nn.Linear(1024, 256)}
                         ),
-                        "mlp": torch.nn.Linear(64, 16),
+                        "mlp": torch.nn.Linear(256, 16),
                     }
                 )
                 for _ in range(3)
